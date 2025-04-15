@@ -41,80 +41,67 @@ Usage:
 import json
 import os
 
+# BUG: no error handling for file not found
+# FIX: added error handling for file not found
 def load_patient_data(filepath):
-    """
-    Load patient data from a JSON file.
-    
-    Args:
-        filepath (str): Path to the JSON file
+    try:
+        with open(filepath, 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        print(f"Error: File not found at {filepath}")
+        return []
         
-    Returns:
-        list: List of patient dictionaries
-    """
-    # BUG: No error handling for file not found
-    with open(filepath, 'r') as file:
-        return json.load(file)
-
 def clean_patient_data(patients):
-    """
-    Clean patient data by:
-    - Capitalizing names
-    - Converting ages to integers
-    - Filtering out patients under 18
-    - Removing duplicates
-    
-    Args:
-        patients (list): List of patient dictionaries
-        
-    Returns:
-        list: Cleaned list of patient dictionaries
-    """
     cleaned_patients = []
     
     for patient in patients:
-        # BUG: Typo in key 'nage' instead of 'name'
-        patient['nage'] = patient['name'].title()
-        
-        # BUG: Wrong method name (fill_na vs fillna)
-        patient['age'] = patient['age'].fill_na(0)
-        
-        # BUG: Wrong method name (drop_duplcates vs drop_duplicates)
-        patient = patient.drop_duplcates()
-        
-        # BUG: Wrong comparison operator (= vs ==)
-        if patient['age'] = 18:
-            # BUG: Logic error - keeps patients under 18 instead of filtering them out
-            cleaned_patients.append(patient)
-    
-    # BUG: Missing return statement for empty list
-    if not cleaned_patients:
-        return None
-    
-    return cleaned_patients
+        # BUG: typo in key 'nage' instead of 'name'
+        # FIX: corrected typo 'nage' to 'name'
+        patient['name'] = patient['name'].title()
+
+        try:
+            # BUG: wrong method name (fill_na vs fillna)
+            # FIX: convert age to integer and handle invalid values 
+        patient['age'] = int(patient['age'])
+        except ValueError:
+            patient['age'] = 0  # assign 0 for invalid ages
+        # BUG: logic error - keeps patients under 18 instead of filtering them out
+        # FIX: filter out patients under 18
+        if patient['age'] < 18:
+            continue
+        # append cleaned patient to the list
+        cleaned_patients.append(patient)
+    # BUG: missing return statement for empty list
+    # FIX: remove duplicates based on all patient attributes
+    unique_patients = [dict(t) for t in {tuple(d.items()) for d in cleaned_patients}]
+    return unique_patients
 
 def main():
-    """Main function to run the script."""
-    # Get the directory of the current script
+    # get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Construct the path to the data file
+    # construct the path to the data file
     data_path = os.path.join(script_dir, 'data', 'raw', 'patients.json')
-    
-    # BUG: No error handling for load_patient_data failure
+    # load patient data
     patients = load_patient_data(data_path)
-    
-    # Clean the patient data
+    if not patients:
+        # BUG: no error handling for load_patient_data failure
+        # FIX: added handling for empty or failed data load
+        print("No patient data loaded. Exiting.")
+        return
+    # clean the patient data
     cleaned_patients = clean_patient_data(patients)
     
-    # BUG: No check if cleaned_patients is None
-    # Print the cleaned patient data
+   if cleaned_patients is None:
+        # BUG: no check if cleaned_patients is None
+        # FIX: added check to handle case when cleaned_patients is None
+        print("No valid patient data after cleaning. Exiting.")
+        return
+
+    # print the cleaned patient data
     print("Cleaned Patient Data:")
     for patient in cleaned_patients:
-        # BUG: Using 'name' key but we changed it to 'nage'
         print(f"Name: {patient['name']}, Age: {patient['age']}, Diagnosis: {patient['diagnosis']}")
-    
-    # Return the cleaned data (useful for testing)
+    # return the cleaned data (useful for testing)
     return cleaned_patients
-
 if __name__ == "__main__":
     main()
